@@ -1,12 +1,15 @@
 let net = require('net');
+let StringDecoder = require('string_decoder').StringDecoder;
 
 let clients = [];
 let nickname;
+let decoder = new StringDecoder('utf8');
 
 function checkAvailability(nick) {
     clients.forEach(client => {
-        if (client.nickname == nick)
+        if (client.nickname == nick) {
             return false;
+        }
     });
 
     return true;
@@ -35,9 +38,33 @@ net.createServer(socket => {
     // push socket to list of clients
     clients.push(socket);
 
+    let text;
     // handle incoming data
     socket.on('data', message => {
-        broadcast(socket.nickname + "> " + message, socket);
+        text = message.toString('utf8');
+        text = text.trim();
+        text = text.split(' ');
+        // check if client is trying to change their nickname
+        if (text[0] == 'setnick') {
+            nickname = text[1];
+            // check if nickname is availabke
+            if (checkAvailability(nickname)) {
+                let old = socket.nickname;
+                // change client's nickname
+                clients[clients.indexOf(socket)].nickname = nickname;
+                socket.nickname = nickname;
+                // broadcast nickname change
+                broadcast(old + ' changed their nickname to ' + nickname + '\n', socket);
+                socket.write('Nickname changed to ' + nickname + '.\n')
+            }
+            else {
+                socket.write('Nickname ' + nickname + ' not available.\n')
+            }
+        }
+        else {
+            // if not a nickname change simply boradcast message
+            broadcast(socket.nickname + "> " + message, socket);
+        }
     });
 
     // remove from clients when connection ends
