@@ -26,12 +26,11 @@ function broadcast(message, sender) {
 }
 
 net.createServer(socket => {
-    // prompt user to set a nickname
     socket.write("Welcome to the chat!\n");
-    
+
     // initially set socket nickname to ip:port
     socket.nickname = socket.remoteAddress + ':' + socket.remotePort;
-    
+
     // broadcast new connection
     broadcast(socket.nickname + " joined the chat.\n", socket);
 
@@ -47,7 +46,7 @@ net.createServer(socket => {
         // check if client is trying to change their nickname
         if (text[0] == 'setnick') {
             nickname = text[1];
-            // check if nickname is availabke
+            // check if nickname is available
             if (checkAvailability(nickname)) {
                 let old = socket.nickname;
                 // change client's nickname
@@ -62,12 +61,12 @@ net.createServer(socket => {
             }
         }
         else {
-            // if not a nickname change simply boradcast message
+            // not setting a nickname, simply broadcast the message
             broadcast(socket.nickname + "> " + message, socket);
         }
     });
 
-    // remove from clients when connection ends
+    // remove socket from clients when connection ends
     socket.on('end', () => {
         clients.splice(clients.indexOf(socket), 1);
         broadcast(socket.nickname + ' left the chat.');
