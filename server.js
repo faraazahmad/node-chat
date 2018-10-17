@@ -1,75 +1,42 @@
 let net = require('net');
-let StringDecoder = require('string_decoder').StringDecoder;
 
-let clients = [];
-let nickname;
-let decoder = new StringDecoder('utf8');
+let commandHandler = require('./commandHandler');
+let utils = require('./utils');
 
-function checkAvailability(nick) {
-    clients.forEach(client => {
-        if (client.nickname == nick) {
-            return false;
-        }
-    });
-
-    return true;
-}
-
-function broadcast(message, sender) {
-    clients.forEach(client => {
-        if (client == sender) return;
-        client.write(message);
-    });
-
-    // log message to the server
-    process.stdout.write(message);
-}
+let clients = {};
 
 net.createServer(socket => {
+    // prompt user to set a nickname
     socket.write("Welcome to the chat!\n");
-
+    
     // initially set socket nickname to ip:port
-    socket.nickname = socket.remoteAddress + ':' + socket.remotePort;
+    socket.nickName = socket.remoteAddress + ':' + socket.remotePort;
 
+    // push client to the clientsMap
+    clients[socket.nickName] = socket;
+    
     // broadcast new connection
-    broadcast(socket.nickname + " joined the chat.\n", socket);
-
-    // push socket to list of clients
-    clients.push(socket);
+    utils.broadcast(socket.nickName + " joined the chat.\n", socket, clients);
 
     let text;
     // handle incoming data
     socket.on('data', message => {
         text = message.toString('utf8');
         text = text.trim();
-        text = text.split(' ');
-        // check if client is trying to change their nickname
-        if (text[0] == 'setnick') {
-            nickname = text[1];
-            // check if nickname is available
-            if (checkAvailability(nickname)) {
-                let old = socket.nickname;
-                // change client's nickname
-                clients[clients.indexOf(socket)].nickname = nickname;
-                socket.nickname = nickname;
-                // broadcast nickname change
-                broadcast(old + ' changed their nickname to ' + nickname + '\n', socket);
-                socket.write('Nickname changed to ' + nickname + '.\n')
-            }
-            else {
-                socket.write('Nickname ' + nickname + ' not available.\n')
-            }
+        // check if client is trying to execute a command
+        if (text[0] == '/') {
+           clients = commandHandler(text.substring(1, text.length), socket, clients);
         }
         else {
-            // not setting a nickname, simply broadcast the message
-            broadcast(socket.nickname + "> " + message, socket);
+            // if no command is being executed, broadcast message
+            utils.broadcast(socket.nickName + "> " + message, socket, clients);
         }
     });
 
     // remove socket from clients when connection ends
     socket.on('end', () => {
-        clients.splice(clients.indexOf(socket), 1);
-        broadcast(socket.nickname + ' left the chat.');
+        broadcast(socket.nickName + ' left the chat.\n', null, clients);
+        delete clients[socket.nickName];
     });
 
 }).listen(5000);
