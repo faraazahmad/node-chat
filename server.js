@@ -6,7 +6,7 @@ let utils = require('./utils');
 let clients = {};
 
 net.createServer(socket => {
-    // prompt user to set a nickname
+    // welcome user to the chat
     socket.write("Welcome to the chat!\n");
     
     // initially set socket nickname to ip:port
