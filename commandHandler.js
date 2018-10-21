@@ -18,11 +18,13 @@ function setNick(newNick, socket, clients) {
     return clients;
 }
 
-function getHelp() {
+function getHelp(socket) {
     let helpString = "                                  \
         Avaialable commands:                            \
         setnick - Change/set your nickname              \
     ";
+
+    socket.write(helpString + '\n');
 }
 
 module.exports = function commandHandler(commandString, socket, clients) {
@@ -31,7 +33,7 @@ module.exports = function commandHandler(commandString, socket, clients) {
         switch (command[0]) {
             case 'setnick': setNick(command[1], socket, clients);
                             break;
-            case 'help':    getHelp();
+            case 'help':    getHelp(socket);
                             break;
             default:        socket.write('Unknown command ' + command[0] + '\n');
                             break;
