@@ -39,8 +39,13 @@ module.exports = function commandHandler(commandString, socket, clients) {
                             break;
         }
     }
-    else {
-        socket.write('Invalid arguments for ' + command[0] + '\n');
+    else if (command.length == 1) {
+        switch (command[0]) {
+            case 'help':    getHelp(socket);
+                            break;
+            default:        socket.write('Unknown command ' + command[0] + '\n')
+                            break;
+        }
     }
     return clients;
 }
